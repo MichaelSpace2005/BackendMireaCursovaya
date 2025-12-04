@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy>=1.4
+asyncpg
+pydantic
+pydantic-settings
+alembic
+pytest
+httpx
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+email-validator
+aiosmtplib

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolution Tree - Game Mechanics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-cose-bilkent/4.1.0/cytoscape-cose-bilkent.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Auth Section -->
+        <div id="authSection" class="auth-section">
+            <div class="auth-box">
+                <h1>Evolution Tree</h1>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="login">Login</button>
+                    <button class="tab-btn" data-tab="register">Register</button>
+                </div>
+
+                <!-- Login Tab -->
+                <form id="loginForm" class="tab-content active" data-tab="login">
+                    <h2>Login</h2>
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                    <div id="loginError" class="error-message"></div>
+                </form>
+
+                <!-- Register Tab -->
+                <form id="registerForm" class="tab-content" data-tab="register">
+                    <h2>Register</h2>
+                    <div class="form-group">
+                        <label for="registerUsername">Username</label>
+                        <input type="text" id="registerUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <input type="password" id="registerPassword" required>
+                    </div>
+                    <button type="submit" class="btn">Register</button>
+                    <div id="registerError" class="error-message"></div>
+                </form>
+
+                <!-- Verify Email -->
+                <form id="verifyForm" class="tab-content" data-tab="verify">
+                    <h2>Verify Email</h2>
+                    <p>Check your email for verification link or paste token below:</p>
+                    <div class="form-group">
+                        <label for="verifyToken">Verification Token</label>
+                        <input type="text" id="verifyToken" placeholder="Paste token here">
+                    </div>
+                    <button type="submit" class="btn">Verify</button>
+                    <div id="verifyError" class="error-message"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main App Section -->
+        <div id="appSection" class="app-section" style="display: none;">
+            <header class="header">
+                <div class="header-left">
+                    <h1>Evolution Tree</h1>
+                </div>
+                <div class="header-right">
+                    <span id="userInfo">User: <strong></strong></span>
+                    <button id="logoutBtn" class="btn-secondary">Logout</button>
+                </div>
+            </header>
+
+            <div class="main-content">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <h2>Controls</h2>
+                    <div class="control-group">
+                        <h3>Add Mechanic</h3>
+                        <div class="form-group">
+                            <input type="text" id="mechanicName" placeholder="Mechanic name" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="mechanicDesc" placeholder="Description"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="mechanicYear" placeholder="Year">
+                        </div>
+                        <button id="addMechanicBtn" class="btn">Add Mechanic</button>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Add Link</h3>
+                        <div class="form-group">
+                            <input type="number" id="linkFrom" placeholder="From ID">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="linkTo" placeholder="To ID">
+                        </div>
+                        <div class="form-group">
+                            <select id="linkType">
+                                <option value="inspired_by">Inspired By</option>
+                                <option value="direct_descendant">Direct Descendant</option>
+                                <option value="variant">Variant</option>
+                            </select>
+                        </div>
+                        <button id="addLinkBtn" class="btn">Add Link</button>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>View Tree</h3>
+                        <div class="form-group">
+                            <input type="number" id="treeRootId" placeholder="Root mechanic ID">
+                        </div>
+                        <button id="viewTreeBtn" class="btn">View Tree</button>
+                    </div>
+
+                    <div class="info-panel">
+                        <h3>Selected Node</h3>
+                        <div id="nodeInfo">Click on a node to view details</div>
+                    </div>
+                </aside>
+
+                <!-- Graph Canvas -->
+                <main class="graph-container">
+                    <div id="cy" style="width: 100%; height: 100%;"></div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
