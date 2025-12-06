@@ -37,6 +37,17 @@ async def list_mechanics(
     return mechanics
 
 
+@router.delete("/mechanics/{mechanic_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_mechanic(
+    mechanic_id: int,
+    mechanic_repo: IMechanicRepository = Depends(get_mechanic_repository),
+):
+    deleted = await mechanic_repo.delete(mechanic_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mechanic not found")
+    return None
+
+
 @router.post("/mechanics/", response_model=MechanicResponse, status_code=status.HTTP_201_CREATED)
 async def create_mechanic(
     payload: CreateMechanicRequest,

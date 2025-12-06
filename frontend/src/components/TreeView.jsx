@@ -11,7 +11,7 @@ export default function TreeView() {
     if (selectedMechanic) {
       loadTree(selectedMechanic.id)
     }
-  }, [selectedMechanic])
+  }, [selectedMechanic, links])
 
   const loadTree = async (mechanicId) => {
     const tree = await fetchMechanicTree(mechanicId)

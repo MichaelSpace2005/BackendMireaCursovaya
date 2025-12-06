@@ -6,8 +6,204 @@
     <title>Evolution Tree - Game Mechanics</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto p-6 space-y-6">
+        <header class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">Evolution Tree</h1>
+                <p class="text-gray-300">Добавляйте и удаляйте механики, просматривайте дерево</p>
+            </div>
+            <button id="reloadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Обновить</button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section class="lg:col-span-1 bg-gray-800 rounded-lg p-4 space-y-4 shadow">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold">Механики</h2>
+                    <span id="mechanicsCount" class="text-sm text-gray-400"></span>
+                </div>
+                <div id="mechanicsList" class="space-y-3 max-h-[70vh] overflow-y-auto pr-1"></div>
+            </section>
+
+            <section class="lg:col-span-2 space-y-4">
+                <div class="bg-gray-800 rounded-lg p-4 shadow space-y-3">
+                    <h2 class="text-lg font-semibold">Добавить механику</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input id="nameInput" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none" placeholder="Название" />
+                        <input id="yearInput" type="number" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none" placeholder="Год" />
+                        <input id="descInput" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none md:col-span-1" placeholder="Описание" />
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="addBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Сохранить</button>
+                        <span id="status" class="text-sm text-gray-400"></span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-4 shadow">
+                    <h2 class="text-lg font-semibold mb-2">Дерево эволюции</h2>
+                    <div id="treeTitle" class="text-gray-200 font-medium mb-2"></div>
+                    <div id="treeView" class="bg-gray-900 rounded-lg p-4 min-h-[300px] text-gray-100"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = (() => {
+            // If frontend served on host:3000 -> target host:8000, otherwise fallback to localhost:8000
+            const { origin } = window.location
+            if (origin.includes(':3000')) return origin.replace(':3000', ':8000')
+            return 'http://localhost:8000'
+        })()
+        const API = `${API_BASE}/api/v1`
+        const mechanicsList = document.getElementById('mechanicsList')
+        const mechanicsCount = document.getElementById('mechanicsCount')
+        const treeView = document.getElementById('treeView')
+        const treeTitle = document.getElementById('treeTitle')
+        const statusEl = document.getElementById('status')
+
+        const nameInput = document.getElementById('nameInput')
+        const yearInput = document.getElementById('yearInput')
+        const descInput = document.getElementById('descInput')
+
+        let mechanics = []
+        let selectedId = null
+
+        function setStatus(msg, isError=false) {
+            statusEl.textContent = msg || ''
+            statusEl.className = 'text-sm ' + (isError ? 'text-red-400' : 'text-gray-400')
+        }
+
+        async function fetchMechanics() {
+            setStatus('Загружаю...')
+            try {
+                const res = await fetch(`${API}/mechanics/`)
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                mechanics = await res.json()
+                renderMechanics()
+                setStatus('')
+            } catch (e) {
+                setStatus('Ошибка загрузки механик', true)
+                console.error(e)
+            }
+        }
+
+        function renderMechanics() {
+            mechanicsList.innerHTML = ''
+            mechanicsCount.textContent = mechanics.length ? `${mechanics.length} шт.` : ''
+            mechanics.forEach(m => {
+                const card = document.createElement('div')
+                card.className = `rounded-lg border ${m.id === selectedId ? 'border-yellow-400' : 'border-gray-700'} bg-gradient-to-br from-blue-900 to-blue-700 p-3 cursor-pointer hover:border-blue-300`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <div class="text-white font-semibold text-lg">${m.name}</div>
+                            <div class="text-sm text-blue-100">${m.description || ''}</div>
+                            <div class="text-xs text-blue-50 mt-1">Year: ${m.year || ''}</div>
+                        </div>
+                        <button data-id="${m.id}" class="deleteBtn text-red-300 hover:text-red-200 text-sm">Удалить</button>
+                    </div>
+                `
+                card.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('deleteBtn')) return
+                    selectedId = m.id
+                    renderMechanics()
+                    loadTree(m.id, m.name)
+                })
+                card.querySelector('.deleteBtn').addEventListener('click', async (e) => {
+                    e.stopPropagation()
+                    await deleteMechanic(m.id)
+                })
+                mechanicsList.appendChild(card)
+            })
+        }
+
+        async function loadTree(id, name) {
+            treeTitle.textContent = name || ''
+            treeView.innerHTML = 'Загрузка...'
+            try {
+                const res = await fetch(`${API}/mechanics/${id}/tree`)
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                const tree = await res.json()
+                treeView.innerHTML = ''
+                const ul = document.createElement('ul')
+                ul.className = 'space-y-2'
+                renderTreeNode(tree, ul)
+                treeView.appendChild(ul)
+            } catch (e) {
+                treeView.textContent = 'Не удалось получить дерево'
+                console.error(e)
+            }
+        }
+
+        function renderTreeNode(node, container) {
+            const m = node.mechanic || node
+            const li = document.createElement('li')
+            li.innerHTML = `
+                <div class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    <div class="text-sm font-semibold">${m.name}</div>
+                    <div class="text-xs text-gray-300">${m.description || ''}</div>
+                    <div class="text-xs text-gray-400">Year: ${m.year || ''}</div>
+                </div>
+            `
+            container.appendChild(li)
+            const children = node.children || []
+            if (children.length) {
+                const innerUl = document.createElement('ul')
+                innerUl.className = 'ml-4 border-l border-gray-600 pl-3 space-y-2 mt-2'
+                children.forEach(child => renderTreeNode(child, innerUl))
+                container.appendChild(innerUl)
+            }
+        }
+
+        async function addMechanic() {
+            const name = nameInput.value.trim()
+            const year = parseInt(yearInput.value) || null
+            const description = descInput.value.trim()
+            if (!name) {
+                setStatus('Введите название', true)
+                return
+            }
+            try {
+                const res = await fetch(`${API}/mechanics/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, year })
+                })
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                nameInput.value = ''
+                yearInput.value = ''
+                descInput.value = ''
+                await fetchMechanics()
+                setStatus('Сохранено')
+            } catch (e) {
+                setStatus('Не удалось сохранить', true)
+                console.error(e)
+            }
+        }
+
+        async function deleteMechanic(id) {
+            if (!confirm('Удалить механику?')) return
+            try {
+                const res = await fetch(`${API}/mechanics/${id}`, { method: 'DELETE' })
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                if (selectedId === id) {
+                    selectedId = null
+                    treeView.innerHTML = ''
+                    treeTitle.textContent = ''
+                }
+                await fetchMechanics()
+                setStatus('Удалено')
+            } catch (e) {
+                setStatus('Не удалось удалить', true)
+                console.error(e)
+            }
+        }
+
+        document.getElementById('addBtn').addEventListener('click', addMechanic)
+        document.getElementById('reloadBtn').addEventListener('click', fetchMechanics)
+
+        fetchMechanics()
+    </script>
 </body>
 </html>
