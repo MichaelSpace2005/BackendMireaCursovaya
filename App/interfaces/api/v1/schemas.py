@@ -34,16 +34,16 @@ class TokenResponse(BaseModel):
 class CreateMechanicRequest(BaseModel):
     """Create mechanic request"""
     name: str
-    description: str = ""
-    year: int = 2024
+    description: Optional[str] = None
+    year: Optional[int] = None
 
 
 class MechanicResponse(BaseModel):
     """Mechanic response"""
     id: int
     name: str
-    description: str
-    year: int
+    description: Optional[str] = None
+    year: Optional[int] = None
 
 
 class CreateLinkRequest(BaseModel):

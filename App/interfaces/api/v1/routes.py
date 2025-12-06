@@ -57,7 +57,7 @@ async def create_mechanic(
     mechanic = GameMechanic(
         id=None,
         name=payload.name,
-        description=payload.description,
+        description=payload.description or "",
         year=payload.year,
     )
     created = await use_case.execute(mechanic)
