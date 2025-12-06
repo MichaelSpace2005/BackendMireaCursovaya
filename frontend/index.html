@@ -39,6 +39,23 @@
                     </div>
                 </div>
 
+                <div class="bg-gray-800 rounded-lg p-4 shadow space-y-3">
+                    <h2 class="text-lg font-semibold">Связи между механиками</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input id="fromInput" type="number" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none" placeholder="ID источника" />
+                        <input id="toInput" type="number" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none" placeholder="ID приемника" />
+                        <select id="typeSelect" class="px-3 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none">
+                            <option value="evolution">Эволюция</option>
+                            <option value="inspired_by">Вдохновлено</option>
+                            <option value="variant">Вариация</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="addLinkBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Сохранить связь</button>
+                        <span id="linkStatus" class="text-sm text-gray-400"></span>
+                    </div>
+                </div>
+
                 <div class="bg-gray-800 rounded-lg p-4 shadow">
                     <h2 class="text-lg font-semibold mb-2">Дерево эволюции</h2>
                     <div id="treeTitle" class="text-gray-200 font-medium mb-2"></div>
@@ -61,10 +78,14 @@
         const treeView = document.getElementById('treeView')
         const treeTitle = document.getElementById('treeTitle')
         const statusEl = document.getElementById('status')
+        const linkStatusEl = document.getElementById('linkStatus')
 
         const nameInput = document.getElementById('nameInput')
         const yearInput = document.getElementById('yearInput')
         const descInput = document.getElementById('descInput')
+        const fromInput = document.getElementById('fromInput')
+        const toInput = document.getElementById('toInput')
+        const typeSelect = document.getElementById('typeSelect')
 
         let mechanics = []
         let selectedId = null
@@ -72,6 +93,11 @@
         function setStatus(msg, isError=false) {
             statusEl.textContent = msg || ''
             statusEl.className = 'text-sm ' + (isError ? 'text-red-400' : 'text-gray-400')
+        }
+
+        function setLinkStatus(msg, isError=false) {
+            linkStatusEl.textContent = msg || ''
+            linkStatusEl.className = 'text-sm ' + (isError ? 'text-red-400' : 'text-gray-400')
         }
 
         async function fetchMechanics() {
@@ -98,6 +124,7 @@
                     <div class="flex justify-between items-start gap-2">
                         <div>
                             <div class="text-white font-semibold text-lg">${m.name}</div>
+                            <div class="text-xs text-blue-200">ID: ${m.id}</div>
                             <div class="text-sm text-blue-100">${m.description || ''}</div>
                             <div class="text-xs text-blue-50 mt-1">Year: ${m.year || ''}</div>
                         </div>
@@ -141,7 +168,7 @@
             const li = document.createElement('li')
             li.innerHTML = `
                 <div class="bg-gray-700 border border-gray-600 rounded px-3 py-2">
-                    <div class="text-sm font-semibold">${m.name}</div>
+                    <div class="text-sm font-semibold">${m.name} <span class="text-[10px] text-gray-300">(ID: ${m.id})</span></div>
                     <div class="text-xs text-gray-300">${m.description || ''}</div>
                     <div class="text-xs text-gray-400">Year: ${m.year || ''}</div>
                 </div>
@@ -200,8 +227,44 @@
             }
         }
 
+        async function addLink() {
+            const from_id = parseInt(fromInput.value)
+            const to_id = parseInt(toInput.value)
+            const type = typeSelect.value
+            if (!from_id || !to_id) {
+                setLinkStatus('Укажите оба ID', true)
+                return
+            }
+            try {
+                const res = await fetch(`${API}/mechanics/links`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ from_id, to_id, type })
+                })
+                if (!res.ok) {
+                    let msg = `HTTP ${res.status}`
+                    try {
+                        const data = await res.json()
+                        if (data.detail) msg = data.detail
+                    } catch (_) {}
+                    throw new Error(msg)
+                }
+                fromInput.value = ''
+                toInput.value = ''
+                setLinkStatus('Связь сохранена')
+                // Обновим дерево, если выбран корень
+                if (selectedId) {
+                    await loadTree(selectedId, mechanics.find(m => m.id === selectedId)?.name)
+                }
+            } catch (e) {
+                setLinkStatus(`Не удалось сохранить связь: ${e.message}`, true)
+                console.error(e)
+            }
+        }
+
         document.getElementById('addBtn').addEventListener('click', addMechanic)
         document.getElementById('reloadBtn').addEventListener('click', fetchMechanics)
+        document.getElementById('addLinkBtn').addEventListener('click', addLink)
 
         fetchMechanics()
     </script>
