@@ -1,52 +1,50 @@
-from typing import Protocol, List, Dict, Any
+from dataclasses import dataclass
+from typing import List
+
 from app.entities.mechanic import GameMechanic
 from app.entities.link import EvolutionLink
+from app.interfaces.repos.mechanic_repo import IMechanicRepository
+from app.interfaces.repos.link_repo import ILinkRepository
 
-class IMechanicRepo(Protocol):
-    async def get_by_id(self, id: int) -> GameMechanic | None: ...
-    async def list_all(self) -> List[GameMechanic]: ...
 
-class ILinkRepo(Protocol):
-    async def list_links_from(self, from_id: int) -> List[EvolutionLink]: ...
-    async def list_links(self) -> List[EvolutionLink]: ...
+@dataclass
+class MechanicTree:
+    """Tree structure for mechanic"""
+    mechanic: GameMechanic
+    children: List["MechanicTree"]
+
 
 class GetMechanicTreeUseCase:
-    def __init__(self, mechanic_repo: IMechanicRepo, link_repo: ILinkRepo):
+    """Use case for getting mechanic evolution tree"""
+    
+    def __init__(self, mechanic_repo: IMechanicRepository, link_repo: ILinkRepository):
         self.mechanic_repo = mechanic_repo
         self.link_repo = link_repo
-
-    async def execute(self, root_id: int) -> Dict[str, Any]:
-        root = await self.mechanic_repo.get_by_id(root_id)
-        if not root:
-            raise ValueError("Root mechanic not found")
-
-        # load all links and mechanics (for simplicity)
-        links = await self.link_repo.list_links()
-        mechanics = {m.id: m for m in await self.mechanic_repo.list_all()}
-
-        # build adjacency
-        children_map: dict[int, list] = {}
+    
+    async def execute(self, mechanic_id: int) -> MechanicTree:
+        """Execute tree building"""
+        mechanic = await self.mechanic_repo.get_by_id(mechanic_id)
+        if not mechanic:
+            raise ValueError("Mechanic not found")
+        
+        tree = await self._build_tree(mechanic_id, visited=set())
+        return tree
+    
+    async def _build_tree(self, mechanic_id: int, visited: set) -> MechanicTree:
+        """Recursively build mechanic tree"""
+        # Prevent infinite loops
+        if mechanic_id in visited:
+            mechanic = await self.mechanic_repo.get_by_id(mechanic_id)
+            return MechanicTree(mechanic=mechanic, children=[])
+        
+        visited.add(mechanic_id)
+        
+        mechanic = await self.mechanic_repo.get_by_id(mechanic_id)
+        links = await self.link_repo.list_by_from_id(mechanic_id)
+        
+        children = []
         for link in links:
-            children_map.setdefault(link.from_id, []).append(link)
-
-        def build_node(mid: int, visited: set) -> dict:
-            if mid in visited:
-                return {"id": mid, "name": mechanics[mid].name, "cycle": True}
-            visited.add(mid)
-            node = {
-                "id": mid,
-                "name": mechanics[mid].name,
-                "description": mechanics[mid].description,
-                "year": mechanics[mid].year,
-                "children": []
-            }
-            for l in children_map.get(mid, []):
-                if l.to_id in mechanics:
-                    node["children"].append({
-                        "type": l.type,
-                        "node": build_node(l.to_id, visited.copy())
-                    })
-            return node
-
-        tree = build_node(root.id, set())
-        return {"root": tree}
+            child_tree = await self._build_tree(link.to_id, visited.copy())
+            children.append(child_tree)
+        
+        return MechanicTree(mechanic=mechanic, children=children)

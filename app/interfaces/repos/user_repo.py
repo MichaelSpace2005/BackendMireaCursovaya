@@ -1,32 +1,33 @@
 from abc import ABC, abstractmethod
-from app.entities.user import User, EmailToken
-from typing import List, Optional
+from typing import Optional
+
+from app.entities.user import User
+
 
 class IUserRepository(ABC):
-    @abstractmethod
-    async def create(self, user: User) -> User: ...
+    """Interface for user repository"""
     
     @abstractmethod
-    async def get_by_email(self, email: str) -> Optional[User]: ...
+    async def create(self, user: User) -> User:
+        """Create new user"""
+        pass
     
     @abstractmethod
-    async def get_by_username(self, username: str) -> Optional[User]: ...
+    async def get_by_id(self, id: int) -> Optional[User]:
+        """Get user by id"""
+        pass
     
     @abstractmethod
-    async def get_by_id(self, id: int) -> Optional[User]: ...
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """Get user by email"""
+        pass
     
     @abstractmethod
-    async def update(self, user: User) -> User: ...
-
-class IEmailTokenRepository(ABC):
-    @abstractmethod
-    async def create(self, token: EmailToken) -> EmailToken: ...
+    async def get_by_username(self, username: str) -> Optional[User]:
+        """Get user by username"""
+        pass
     
     @abstractmethod
-    async def get_by_token(self, token: str) -> Optional[EmailToken]: ...
-    
-    @abstractmethod
-    async def mark_as_used(self, token_id: int) -> None: ...
-    
-    @abstractmethod
-    async def delete_expired(self) -> None: ...
+    async def update(self, user: User) -> User:
+        """Update existing user"""
+        pass

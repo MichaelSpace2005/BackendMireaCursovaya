@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
+.mechanism-card {
+  @apply bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg p-4 shadow-lg cursor-move border-2 border-blue-400 hover:border-blue-200 transition-all;
+}
+
+.mechanism-card:hover {
+  @apply transform scale-105 shadow-xl;
+}
+
+.mechanism-card.selected {
+  @apply border-yellow-400 ring-2 ring-yellow-300;
+}
+
+.tree-container {
+  @apply relative w-full h-screen bg-gray-900 overflow-auto;
+}
+
+.node-svg {
+  stroke: #60a5fa;
+  stroke-width: 2;
+  fill: none;
+}
+
+.connection-line {
+  stroke: #3b82f6;
+  stroke-width: 2;
+  stroke-dasharray: 5,5;
+  pointer-events: none;
+}

@@ -1,16 +1,16 @@
-from typing import Protocol
 from app.entities.mechanic import GameMechanic
+from app.interfaces.repos.mechanic_repo import IMechanicRepository
 
-class IMechanicRepo(Protocol):
-    async def create(self, mechanic: GameMechanic) -> GameMechanic: ...
-    async def get_by_id(self, id: int) -> GameMechanic | None: ...
 
 class CreateMechanicUseCase:
-    def __init__(self, repo: IMechanicRepo):
-        self.repo = repo
-
+    """Use case for creating a mechanic"""
+    
+    def __init__(self, mechanic_repo: IMechanicRepository):
+        self.mechanic_repo = mechanic_repo
+    
     async def execute(self, mechanic: GameMechanic) -> GameMechanic:
-        # basic validation
-        if not mechanic.name or len(mechanic.name.strip()) == 0:
-            raise ValueError("Mechanic name is required")
-        return await self.repo.create(mechanic)
+        """Execute mechanic creation"""
+        if not mechanic.name or not mechanic.name.strip():
+            raise ValueError("Mechanic name cannot be empty")
+        
+        return await self.mechanic_repo.create(mechanic)

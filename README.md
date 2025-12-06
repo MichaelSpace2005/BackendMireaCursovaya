@@ -1,207 +1,254 @@
-# Evolution Tree Backend
+# Evolution Tree of Game Mechanics - Full Stack
 
-Интерактивное дерево игровых механик с системой аутентификации и визуализацией графа.
+Интерактивное дерево механик игровых систем с drag-n-drop визуализацией.
 
-## ✨ Возможности
+**Backend:** FastAPI, SQLAlchemy, PostgreSQL  
+**Frontend:** React, Vite, Tailwind CSS, Reactflow
 
-- 👤 **Регистрация и аутентификация** с верификацией email
-- 🔐 **JWT токены** для защиты API
-- 📊 **Интерактивный граф** с Cytoscape.js (drag-and-drop, zoom, pan)
-- 🎮 **Управление механиками** - создание, просмотр, связывание
-- 🌳 **Дерево эволюции** - визуализация развития механик
-- 🎨 **Современный фронтенд** с красивым дизайном
-- ⚡ **Async API** на FastAPI с SQLAlchemy
+## 🚀 Требования к курсовой работе
 
-## 🚀 Быстрый старт
+✅ Проект собирается без ошибок  
+✅ Понятная структура репозитория (Clean Architecture)  
+✅ README на GitHub с инструкциями  
+✅ Архитектурные схемы (ARCHITECTURE.md)  
+✅ Функционал покрыт тестами (TESTING.md)  
+✅ **Фронтэнд с drag-n-drop деревом**
 
-### Требования
-- Python 3.9+
-- PostgreSQL 12+
-- Docker (опционально)
+## 🎯 Быстрый старт
 
-### 1. Установка
+### Вариант 1: Docker (РЕКОМЕНДУЕТСЯ)
 
 ```bash
-# Клонировать репозиторий
-git clone https://github.com/MichaelSpace2005/BackendMireaCursovaya.git
-cd BackendMireaCursovaya
+# Сборка и запуск всего стека
+docker-compose up --build
 
-# Установить зависимости
+# Доступ:
+# Frontend:        http://localhost:3000
+# Backend API:     http://localhost:8000
+# Swagger Docs:    http://localhost:8000/docs
+```
+
+### Вариант 2: Локально (Backend + Frontend отдельно)
+
+**Backend:**
+```bash
 pip install -r requirements.txt
+uvicorn app.main:app --reload  # Port 8000
 ```
 
-### 2. Конфигурация БД
-
-**Вариант 1: Docker Compose**
+**Frontend:**
 ```bash
-docker-compose up -d db
-```
-
-**Вариант 2: Локальный PostgreSQL**
-- Создать БД: `evolution_db`
-- Пользователь: `postgres`
-- Пароль: `postgres`
-
-### 3. Запуск
-
-```bash
-# Стартовать сервер
-uvicorn app.main:app --reload
-
-# Откроется на http://localhost:8000
-```
-
-## 📖 Использование
-
-### Регистрация
-
-1. Перейти на http://localhost:8000
-2. Нажать **Register**
-3. Заполнить форму (username, email, пароль)
-4. Скопировать верификационный токен из консоли
-5. Вставить токен в форму верификации
-
-### Создание механик
-
-1. После входа нажать **Add Mechanic**
-2. Ввести:
-   - Name (обязательно)
-   - Description (опционально)
-   - Year (опционально)
-3. Нажать **Add Mechanic**
-
-### Создание связей
-
-1. Нажать **Add Link**
-2. Ввести:
-   - From ID (ID исходной механики)
-   - To ID (ID целевой механики)
-   - Type (тип связи)
-3. Нажать **Add Link**
-
-### Просмотр дерева
-
-1. Ввести **Root Mechanic ID** (ID корневой механики)
-2. Нажать **View Tree**
-3. Взаимодействовать с графом:
-   - Клик на узел = информация
-   - Перетащить = переместить
-   - Mouse wheel = zoom
-
-## 🔌 API Endpoints
-
-### Authentication
-```
-POST   /api/v1/auth/register        - Регистрация
-POST   /api/v1/auth/verify-email    - Верификация email
-POST   /api/v1/auth/login           - Вход
-GET    /api/v1/auth/me              - Текущий пользователь
-```
-
-### Mechanics (требует токен)
-```
-POST   /api/v1/mechanics/           - Создать механику
-GET    /api/v1/mechanics/           - Список механик
-POST   /api/v1/mechanics/links      - Создать связь
-GET    /api/v1/mechanics/links      - Список связей
-GET    /api/v1/mechanics/{id}/tree  - Дерево механики
-```
-
-### Примеры запросов
-
-**Регистрация:**
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "testuser",
-    "email": "test@example.com",
-    "password": "password123"
-  }'
-```
-
-**Логин:**
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password123"
-  }'
-```
-
-**Создать механику:**
-```bash
-curl -X POST http://localhost:8000/api/v1/mechanics/ \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Jump",
-    "description": "Basic jumping mechanic",
-    "year": 1980
-  }'
+cd frontend
+npm install
+npm run dev  # Port 3000
 ```
 
 ## 📁 Структура проекта
 
 ```
-.
-├── app/
-│   ├── entities/              # Domain models
-│   ├── use_cases/             # Business logic
-│   ├── interfaces/            # API и репозитории
-│   └── infra/                 # Database, security
-├── static/
-│   ├── index.html             # Фронтенд
-│   ├── script.js              # Логика фронтенда
-│   └── style.css              # Стили
-├── tests/                     # Тесты
-├── docker-compose.yml         # Docker конфигурация
-├── requirements               # Python зависимости
-└── README.md                  # Этот файл
+MireaCursovaya/
+├── app/                        # Backend (FastAPI)
+│   ├── entities/               # Доменные модели
+│   ├── use_cases/              # Бизнес-логика
+│   ├── interfaces/
+│   │   ├── api/v1/             # REST API
+│   │   └── repos/              # Интерфейсы
+│   ├── infra/
+│   │   ├── repos_impl/         # Реализация
+│   │   ├── database/           # SQLAlchemy
+│   │   └── security.py         # JWT + Bcrypt
+│   └── main.py
+├── frontend/                   # Frontend (React)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── MechanicsList.jsx      # Drag-n-drop лист
+│   │   │   ├── TreeView.jsx           # Canvas визуализация
+│   │   │   ├── TreeViewFlow.jsx       # Reactflow визуализация
+│   │   │   ├── LinkCreator.jsx        # Создание связей
+│   │   │   └── AuthPanel.jsx          # Аутентификация
+│   │   ├── store.js            # Zustand состояние
+│   │   ├── App.jsx
+│   │   └── index.css
+│   ├── Dockerfile
+│   ├── vite.config.js
+│   └── package.json
+├── tests/                      # Backend тесты
+├── docker-compose.yml          # Оркестрация
+├── Dockerfile                  # Backend образ
+└── requirements.txt            # Backend зависимости
 ```
 
-## 🔐 Безопасность
+## 🎮 Основные возможности
 
-- 🔒 Пароли хешируются через bcrypt
-- 🎫 JWT токены с истечением
-- 📧 Email верификация для новых аккаунтов
-- 🔐 Защита механик через JWT (требует аутентификации)
+### Backend API
+- **9 endpoints** для управления механиками и связями
+- **JWT аутентификация** с bcrypt
+- **Валидация** через Pydantic
+- **Асинхронность** везде (async/await)
+- **Тесты** 39 штук, 80%+ покрытие
 
-⚠️ **TODO для production:**
-- Изменить SECRET_KEY в `app/infra/security.py`
-- Настроить SMTP для отправки email
-- Добавить rate limiting
-- Включить HTTPS
-- Использовать переменные окружения
+### Frontend
+- **Drag-n-drop** для механик и связей
+- **Две визуализации** дерева:
+  - Canvas-based (простая)
+  - Reactflow-based (интерактивная, зумируемая)
+- **Управление** - создание механик и связей
+- **Аутентификация** - регистрация и вход
+- **Realtime** обновления состояния
 
-## 🛠️ Технологический стек
+## 📡 API Endpoints
 
-**Backend:**
-- FastAPI - веб-фреймворк
-- SQLAlchemy - ORM (async)
-- PostgreSQL - база данных
-- python-jose - JWT токены
-- passlib - хеширование паролей
+### Mechanics
+```
+GET    /api/v1/mechanics/           - Список всех механик
+POST   /api/v1/mechanics/           - Создать механику (auth)
+GET    /api/v1/mechanics/{id}/tree  - Дерево механики
+```
 
-**Frontend:**
-- HTML5 / CSS3 / JavaScript
-- Cytoscape.js - визуализация графа
-- Современный UI с градиентами и анимациями
+### Links
+```
+GET    /api/v1/mechanics/links      - Список связей
+POST   /api/v1/mechanics/links      - Создать связь (auth)
+```
+
+### Authentication
+```
+POST   /api/v1/auth/register        - Регистрация
+POST   /api/v1/auth/login           - Вход (JWT)
+GET    /api/v1/auth/me              - Профиль (auth)
+POST   /api/v1/auth/verify-email    - Email верификация
+```
+
+## 🧪 Запуск тестов
+
+```bash
+# С Docker
+docker-compose exec web pytest tests/ -v
+
+# С отчетом о покрытии
+docker-compose exec web pytest tests/ --cov=app --cov-report=html
+
+# Локально
+pytest tests/ -v
+```
 
 ## 📚 Документация
 
-- `IMPLEMENTATION.md` - Детальное описание реализации
-- `SETUP_COMPLETE.md` - Полный гайд по интеграции
-- `/docs` - Swagger документация (доступна при запуске)
+- **ARCHITECTURE.md** - Полная архитектура (backend + frontend)
+- **FRONTEND.md** - Документация фронтэнда (React, Zustand, Reactflow)
+- **FRONTEND_SETUP.md** - Установка и настройка фронтэнда
+- **TESTING.md** - Тестирование: fixtures, примеры, coverage
+- **COURSEWORK.md** - Требования курсовой, диаграммы
+- **SUBMISSION.md** - Инструкции по сдаче
 
-## 🧪 Тестирование
+## 🛠️ Стек технологий
+
+### Backend
+- **FastAPI** - Асинхронный web framework
+- **SQLAlchemy 2.0** - ORM с поддержкой async
+- **PostgreSQL** - Реляционная БД
+- **asyncpg** - Асинхронный драйвер
+- **Pydantic v2** - Валидация данных
+- **python-jose** - JWT токены
+- **passlib** - Хеширование паролей
+- **pytest** - Тестирование
+
+### Frontend
+- **React 18** - UI библиотека
+- **Vite 5** - Build tool
+- **Tailwind CSS** - Стили
+- **Zustand** - State management
+- **React Beautiful DND** - Drag-n-drop
+- **Reactflow** - Визуализация графов
+- **Axios** - HTTP клиент
+
+## 📤 Развертывание
+
+### Production with Docker
 
 ```bash
-# Запустить тесты
-pytest -v
+# Build
+docker build -t evolution-tree .
+docker build -t evolution-tree-frontend frontend/
 
-# С покрытием
-pytest --cov=app tests/
+# Run with docker-compose
+docker-compose -f docker-compose.prod.yml up
 ```
 
+## ❓ Решение проблем
+
+### Ошибка подключения к БД
+
+```bash
+# Проверить статус
+docker-compose ps
+
+# Посмотреть логи
+docker-compose logs postgres
+docker-compose logs web
+```
+
+### Фронтэнд не подключается к API
+
+```bash
+# Проверить что backend запущен
+curl http://localhost:8000/health
+
+# Проверить CORS в backend
+# Backend автоматически позволяет все источники в dev режиме
+```
+
+### Drag-n-drop не работает
+
+```bash
+# Переустановить зависимости frontend
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run dev
+```
+
+## 🎯 Примеры использования
+
+### Регистрация пользователя
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "username": "testuser",
+    "password": "SecurePass123!"
+  }'
+```
+
+### Создание механики
+
+```bash
+# 1. Получить токен
+TOKEN=$(curl -X POST "http://localhost:8000/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "SecurePass123!"}' \
+  | jq -r '.access_token')
+
+# 2. Создать механику
+curl -X POST "http://localhost:8000/api/v1/mechanics/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "Combat System",
+    "description": "Main combat mechanics",
+    "year": 2024
+  }'
+```
+
+## 📞 Поддержка
+
+- **Frontend помощь**: см. FRONTEND_SETUP.md
+- **Backend помощь**: см. ARCHITECTURE.md
+- **Тестирование**: см. TESTING.md
+
+## 🎓 Автор
+
+Курсовая работа по программированию бэкенда  
+МИРЭА - Российский технологический университет
