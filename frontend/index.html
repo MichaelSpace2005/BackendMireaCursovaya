@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evolution Tree - Game Mechanics</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="max-w-6xl mx-auto p-6 space-y-6">
@@ -61,6 +62,16 @@
                     <div id="treeTitle" class="text-gray-200 font-medium mb-2"></div>
                     <div id="treeView" class="bg-gray-900 rounded-lg p-4 min-h-[300px] text-gray-100"></div>
                 </div>
+
+                <div class="bg-gray-800 rounded-lg p-4 shadow space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold">Общий граф всех механик</h2>
+                        <span id="graphStatus" class="text-sm text-gray-400"></span>
+                    </div>
+                    <div class="bg-gray-900 rounded-lg border border-gray-700" style="height: 520px;">
+                        <svg id="graphSvg" class="w-full h-full"></svg>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
@@ -79,6 +90,8 @@
         const treeTitle = document.getElementById('treeTitle')
         const statusEl = document.getElementById('status')
         const linkStatusEl = document.getElementById('linkStatus')
+        const graphStatusEl = document.getElementById('graphStatus')
+        const graphSvg = document.getElementById('graphSvg')
 
         const nameInput = document.getElementById('nameInput')
         const yearInput = document.getElementById('yearInput')
@@ -88,6 +101,7 @@
         const typeSelect = document.getElementById('typeSelect')
 
         let mechanics = []
+        let links = []
         let selectedId = null
 
         function setStatus(msg, isError=false) {
@@ -102,14 +116,23 @@
 
         async function fetchMechanics() {
             setStatus('Загружаю...')
+            graphStatusEl.textContent = 'Обновляю граф...'
             try {
-                const res = await fetch(`${API}/mechanics/`)
-                if (!res.ok) throw new Error(`HTTP ${res.status}`)
-                mechanics = await res.json()
+                const [mechRes, linkRes] = await Promise.all([
+                    fetch(`${API}/mechanics/`),
+                    fetch(`${API}/mechanics/links`)
+                ])
+                if (!mechRes.ok) throw new Error(`Mechanics HTTP ${mechRes.status}`)
+                mechanics = await mechRes.json()
+                if (!linkRes.ok) throw new Error(`Links HTTP ${linkRes.status}`)
+                links = await linkRes.json()
                 renderMechanics()
+                renderGraph()
                 setStatus('')
+                graphStatusEl.textContent = ''
             } catch (e) {
                 setStatus('Ошибка загрузки механик', true)
+                graphStatusEl.textContent = 'Граф не обновлён'
                 console.error(e)
             }
         }
@@ -136,6 +159,7 @@
                     selectedId = m.id
                     renderMechanics()
                     loadTree(m.id, m.name)
+                    renderGraph()
                 })
                 card.querySelector('.deleteBtn').addEventListener('click', async (e) => {
                     e.stopPropagation()
@@ -252,7 +276,7 @@
                 fromInput.value = ''
                 toInput.value = ''
                 setLinkStatus('Связь сохранена')
-                // Обновим дерево, если выбран корень
+                await fetchMechanics()
                 if (selectedId) {
                     await loadTree(selectedId, mechanics.find(m => m.id === selectedId)?.name)
                 }
@@ -260,6 +284,167 @@
                 setLinkStatus(`Не удалось сохранить связь: ${e.message}`, true)
                 console.error(e)
             }
+        }
+
+        function renderGraph() {
+            if (!graphSvg) return
+            const width = graphSvg.clientWidth || 800
+            const height = graphSvg.clientHeight || 460
+            const svg = d3.select(graphSvg)
+            svg.selectAll('*').remove()
+            svg.attr('viewBox', `0 0 ${width} ${height}`)
+
+            // Background
+            svg.append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('fill', '#0b1220')
+
+            const layer = svg.append('g')
+
+            // Degree calculation for sizing/coloring
+            const degree = new Map()
+            links.forEach(l => {
+                degree.set(l.from_id, (degree.get(l.from_id) || 0) + 1)
+                degree.set(l.to_id, (degree.get(l.to_id) || 0) + 1)
+            })
+
+            const nodes = mechanics.map(m => ({
+                id: m.id,
+                name: m.name,
+                description: m.description,
+                year: m.year,
+                deg: degree.get(m.id) || 0
+            }))
+
+            const linkData = links.map(l => ({
+                source: l.from_id,
+                target: l.to_id,
+                type: l.type
+            }))
+
+            const nodeColor = d => {
+                if (d.deg >= 8) return '#d4a017'
+                if (d.deg >= 4) return '#9f7aea'
+                return '#6b7280'
+            }
+
+            const nodeStroke = d => {
+                if (d.deg >= 8) return '#f59e0b'
+                if (d.deg >= 4) return '#c084fc'
+                return '#94a3b8'
+            }
+
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(linkData).id(d => d.id).distance(90).strength(0.9))
+                .force('charge', d3.forceManyBody().strength(-160))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => {
+                    const w = Math.max(110, Math.min(200, 10 + (d.name?.length || 0) * 7))
+                    const h = 44
+                    return Math.max(w, h) * 0.6
+                }))
+
+            const link = layer.append('g')
+                .attr('stroke', '#94a3b8')
+                .attr('stroke-opacity', 0.45)
+                .selectAll('line')
+                .data(linkData)
+                .enter()
+                .append('line')
+                .attr('stroke-width', 1.2)
+
+            const node = layer.append('g')
+                .selectAll('g')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended))
+
+            const rectWidth = d => Math.max(110, Math.min(200, 10 + (d.name?.length || 0) * 7))
+            const rectHeight = 44
+
+            node.append('rect')
+                .attr('x', d => -rectWidth(d) / 2)
+                .attr('y', -rectHeight / 2)
+                .attr('rx', 6)
+                .attr('ry', 6)
+                .attr('width', d => rectWidth(d))
+                .attr('height', rectHeight)
+                .attr('fill', nodeColor)
+                .attr('stroke', d => d.id === selectedId ? '#ef4444' : nodeStroke(d))
+                .attr('stroke-width', d => d.id === selectedId ? 3 : 2)
+                .attr('opacity', 0.9)
+
+            node.append('text')
+                .text(d => d.name)
+                .attr('fill', '#e2e8f0')
+                .attr('font-size', 11)
+                .attr('font-weight', '700')
+                .attr('text-anchor', 'middle')
+                .attr('y', -4)
+                .attr('pointer-events', 'none')
+
+            node.append('text')
+                .text(d => `ID:${d.id}${d.year ? ` · ${d.year}` : ''}`)
+                .attr('fill', '#cbd5e1')
+                .attr('font-size', 10)
+                .attr('text-anchor', 'middle')
+                .attr('y', 12)
+                .attr('pointer-events', 'none')
+
+            link.append('title').text(d => d.type)
+            node.append('title').text(d => `${d.name}\nID: ${d.id}${d.year ? `\nYear: ${d.year}` : ''}`)
+
+            const edgePoint = (a, b) => {
+                const dx = b.x - a.x || 0.0001
+                const dy = b.y - a.y || 0.0001
+                const halfW = rectWidth(a) / 2 + 6
+                const halfH = rectHeight / 2 + 6
+                const ratioX = Math.abs(dx) / halfW
+                const ratioY = Math.abs(dy) / halfH
+                if (ratioX > ratioY) {
+                    return { x: a.x + Math.sign(dx) * halfW, y: a.y + (dy / Math.abs(dx)) * halfW }
+                }
+                return { x: a.x + (dx / Math.abs(dy)) * halfH, y: a.y + Math.sign(dy) * halfH }
+            }
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => edgePoint(d.source, d.target).x)
+                    .attr('y1', d => edgePoint(d.source, d.target).y)
+                    .attr('x2', d => edgePoint(d.target, d.source).x)
+                    .attr('y2', d => edgePoint(d.target, d.source).y)
+
+                node.attr('transform', d => `translate(${d.x},${d.y})`)
+            })
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart()
+                d.fx = d.x
+                d.fy = d.y
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x
+                d.fy = event.y
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0)
+                d.fx = null
+                d.fy = null
+            }
+
+            // Zoom/pan
+            svg.call(d3.zoom()
+                .scaleExtent([0.4, 2.5])
+                .on('zoom', (event) => {
+                    layer.attr('transform', event.transform)
+                }))
         }
 
         document.getElementById('addBtn').addEventListener('click', addMechanic)
