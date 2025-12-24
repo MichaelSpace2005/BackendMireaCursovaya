@@ -32,7 +32,6 @@ class GetMechanicTreeUseCase:
     
     async def _build_tree(self, mechanic_id: int, visited: set) -> MechanicTree:
         """Recursively build mechanic tree"""
-        # Prevent infinite loops
         if mechanic_id in visited:
             mechanic = await self.mechanic_repo.get_by_id(mechanic_id)
             return MechanicTree(mechanic=mechanic, children=[])

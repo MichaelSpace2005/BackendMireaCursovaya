@@ -7,11 +7,9 @@ from app.entities.mechanic import GameMechanic
 
 
 class TestCreateMechanicUseCase:
-    """Unit tests for CreateMechanicUseCase"""
 
     @pytest.mark.asyncio
     async def test_create_mechanic_success(self, mechanic_repo):
-        """Test successful mechanic creation"""
         use_case = CreateMechanicUseCase(mechanic_repo)
         
         mechanic = GameMechanic(
@@ -28,7 +26,6 @@ class TestCreateMechanicUseCase:
 
     @pytest.mark.asyncio
     async def test_create_mechanic_with_empty_name_fails(self, mechanic_repo):
-        """Test that mechanic with empty name fails"""
         use_case = CreateMechanicUseCase(mechanic_repo)
         
         mechanic = GameMechanic(

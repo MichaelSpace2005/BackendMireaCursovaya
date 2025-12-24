@@ -8,7 +8,7 @@ class EvolutionLink:
     id: Optional[int]
     from_id: int
     to_id: int
-    type: str  # e.g., "inspired_by", "direct_descendant", "variant"
+    type: str 
 
     def __post_init__(self):
         """Validate link"""
